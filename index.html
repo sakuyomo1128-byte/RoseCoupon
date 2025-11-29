@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPECIAL COUPON TICKET</title>
+    <style>
+        /* 矢沢あい風のスタイル設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* スクロール禁止 */
+            font-family: 'Arial Black', Gadget, sans-serif; /* クールなフォント */
+            background-color: #f0f0f0; 
+        }
+
+        /* 背景画像の設定 */
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('bg_rose.jpg'); /* ★ここにファイル名を入れてください★ */
+            background-size: cover;
+            background-position: center;
+            filter: grayscale(80%) contrast(150%); /* モノクロ漫画風フィルター */
+        }
+
+        /* 花びらUIのコンテナ（最初は非表示） */
+        #coupon-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* 最初は非表示 */
+            background-color: rgba(0, 0, 0, 0.5); /* 選択時に暗くなるオーバーレイ */
+            z-index: 10;
+        }
+
+        /* クーポン表示エリア（花びらの代わりに中央に表示） */
+        .coupon-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 40px;
+            background-color: rgba(180, 0, 0, 0.85); /* 深い赤の花びら色 */
+            color: #fff;
+            border: 3px solid #fff;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.7);
+            text-align: center;
+            border-radius: 10px; /* 角を丸く */
+        }
+
+        .coupon-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px #000;
+        }
+        
+        /* YES/NO ボタンのスタイル */
+        .action-button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 0 15px;
+            border: 2px solid #fff;
+            background-color: transparent;
+            color: #fff;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #fff;
+            color: #b00;
+        }
+
+        /* 完了画面のスタイル */
+        #completion-ui {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            padding-top: 40vh;
+            z-index: 20;
+        }
+        #completion-ui h1 { color: #f00; }
+    </style>
+</head>
+<body>
+
+    <div class="background-container"></div>
+
+    <div id="initial-message" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; z-index: 5;">
+        <h1 style="font-size: 3em; text-shadow: 2px 2px #000;">Tap a rose petal to reveal your destiny.</h1>
+        <p style="text-align: center; font-size: 1.2em; cursor: pointer;" onclick="showCoupon('MEET_U', '会いにきて券', '会える日を調整してほしい');">タップしてクーポンを見る (仮)</p>
+    </div>
+
+    <div id="coupon-ui">
+        <div class="coupon-display">
+            <div class="coupon-title" id="ui-coupon-name"></div>
+            <p id="ui-coupon-details" style="margin-bottom: 30px; font-style: italic;">使用しますか？</p>
+            <button class="action-button" onclick="confirmUse(true)">YES</button>
+            <button class="action-button" onclick="confirmUse(false)">NO</button>
+        </div>
+    </div>
+
+    <div id="completion-ui">
+        <h1>引き換え完了しました🌹</h1>
+        <p style="font-size: 1.5em; color: #ccc;">あなたからの連絡を心待ちにしています...</p>
+        <p style="font-size: 1.0em; color: #666; margin-top: 50px;">(この画面を閉じても大丈夫です)</p>
+    </div>
+    
+    <script>
+        // 【重要】Step 1で決定したIDとURLを正確に入力してください！
+        const COUPON_CODE_ID = 'entry.1809304282';
+        const REQUEST_DETAIL_ID = 'entry.62765039';
+        const TIMESTAMP_ID = 'entry.824458521';
+        
+        // 【重要】フォームの基本URLに置き換えてください！ (viewformをformResponseに変更)
+        const FORM_BASE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeHRE5ob-I6RskpdFxrNCfeRN4cB03Lf1WKRpmi1I1rWlPe8Q/formResponse?';
+
+        let currentCouponCode = '';
+        let currentRequestDetail = '';
+
+        // クーポンUIの表示
+        function showCoupon(code, name, detail) {
+            currentCouponCode = code;
+            currentRequestDetail = detail; // 今回は定型文なしなので、ほぼ空欄
+            
+            document.getElementById('initial-message').style.display = 'none';
+            document.getElementById('ui-coupon-name').textContent = name;
+            document.getElementById('coupon-ui').style.display = 'block';
+        }
+
+        // YES/NOボタンの処理
+        function confirmUse(isYes) {
+            if (isYes) {
+                useCoupon(currentCouponCode, currentRequestDetail);
+            } else {
+                // NOの場合はUIを隠して初期画面に戻る（リロード）
+                document.getElementById('coupon-ui').style.display = 'none';
+                document.getElementById('initial-message').style.display = 'block';
+                // または window.location.reload(); 
+            }
+        }
+
+        // 自動送信機能 (YESが押されたときに実行される)
+        function useCoupon(couponCode, requestDetail) {
+            // 1. 現在の日時を取得
+            const now = new Date();
+            const timestamp = now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }).replace(/\//g, '/').replace(/ /g, ' '); 
+
+            // 2. 自動送信用の最終URLを作成
+            const finalUrl = 
+                FORM_BASE_URL +
+                COUPON_CODE_ID + '=' + encodeURIComponent(couponCode) + '&' +
+                REQUEST_DETAIL_ID + '=' + encodeURIComponent(requestDetail) + '&' +
+                TIMESTAMP_ID + '=' + encodeURIComponent(timestamp) + 
+                '&submit=Submit';
+
+            // 3. 元カノさんに見えないように自動送信を実行し、完了画面へ切り替え
+            
+            // 【自動送信実行】: 非同期でバックグラウンド送信 (元カノさんは画面遷移しない)
+            // 元カノさんが見えないように、非表示の画像としてURLを読み込ませるのが最も簡単な手法
+            const img = new Image();
+            img.src = finalUrl; // これでフォームにデータが送信され、あなたに通知が届く！
+
+            // 【元カノさん向け完了画面表示】
+            document.getElementById('coupon-ui').style.display = 'none';
+            document.getElementById('completion-ui').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
